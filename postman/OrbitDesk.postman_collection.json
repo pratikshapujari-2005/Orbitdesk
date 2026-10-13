@@ -1,0 +1,335 @@
+{
+  "info": {
+    "name": "OrbitDesk smoke tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "boardToken",
+      "value": ""
+    },
+    {
+      "key": "projectId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Database health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Database connected\",()=>pm.expect(pm.response.json().database).to.eql(\"connected\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Unauthorized",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/projects"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 401\",()=>pm.response.to.have.status(401));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Create board",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/boards",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201\",()=>pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"boardToken\",pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Validation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Board-Token",
+            "value": "{{boardToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/projects",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"x\", \"description\": \"Temporary test record\", \"category\": \"Development\", \"priority\": \"high\", \"status\": \"active\", \"progress\": 35, \"due_date\": null}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 400\",()=>pm.response.to.have.status(400));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Create project",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Board-Token",
+            "value": "{{boardToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/projects",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Smoke test\", \"description\": \"Temporary test record\", \"category\": \"Development\", \"priority\": \"high\", \"status\": \"active\", \"progress\": 35, \"due_date\": null}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201\",()=>pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"projectId\",pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Read persisted record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Board-Token",
+            "value": "{{boardToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/projects"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Record persisted\",()=>{const p=pm.response.json().find(p=>p.id===pm.collectionVariables.get(\"projectId\"));pm.expect(p.title).to.eql(\"Smoke test\");pm.expect(p.progress).to.eql(35);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Update",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "X-Board-Token",
+            "value": "{{boardToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/projects/{{projectId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Smoke test\", \"description\": \"Temporary test record\", \"category\": \"Development\", \"priority\": \"high\", \"status\": \"completed\", \"progress\": 35, \"due_date\": null}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Completed progress\",()=>pm.expect(pm.response.json().progress).to.eql(100));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Read persisted update",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Board-Token",
+            "value": "{{boardToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/projects"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Update persisted\",()=>{const p=pm.response.json().find(p=>p.id===pm.collectionVariables.get(\"projectId\"));pm.expect(p.status).to.eql(\"completed\");pm.expect(p.progress).to.eql(100);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Delete",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "X-Board-Token",
+            "value": "{{boardToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/projects/{{projectId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 204\",()=>pm.response.to.have.status(204));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Verify deleted",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Board-Token",
+            "value": "{{boardToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/projects"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Deleted\",()=>pm.expect(pm.response.json().some(p=>p.id===pm.collectionVariables.get(\"projectId\"))).to.eql(false));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Missing record",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "X-Board-Token",
+            "value": "{{boardToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/projects/{{projectId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404\",()=>pm.response.to.have.status(404));",
+              ""
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

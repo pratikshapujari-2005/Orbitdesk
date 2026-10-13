@@ -1,0 +1,31 @@
+{
+  "name": "orbitdesk",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "server": "node --watch server/index.js",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "db:setup": "node server/setup.js",
+    "smoke": "newman run postman/OrbitDesk.postman_collection.json -e postman/local.postman_environment.json"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "pg": "^8.16.0",
+    "dotenv": "^16.6.0",
+    "helmet": "^8.1.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^8.0.0",
+    "zod": "^3.25.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0",
+    "newman": "^6.2.1"
+  }
+}
